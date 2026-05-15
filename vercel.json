@@ -4,7 +4,6 @@
   "outputDirectory": ".",
   "installCommand": "pip install -r requirements.txt",
   "devCommand": "python app.py",
-  "regions": ["iad", "lax", "cdg"],
   "env": {
     "OPENAI_API_KEY___": "required",
     "GEMINI_API_KEY___": "optional",
