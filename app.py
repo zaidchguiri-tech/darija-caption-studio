@@ -1,39 +1,15 @@
-import os, json, time, subprocess, traceback, logging, sys, requests as req_lib
-from flask import Flask, request, jsonify, render_template, send_from_directory, Response
-import httpx
-from openai import OpenAI
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-log = logging.getLogger('darija')
+import os
+from flask import Flask
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB
-app.config['PROPAGATE_EXCEPTIONS'] = False
 
-PORT     = int(os.environ.get('PORT', 8080))
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+PORT = int(os.environ.get("PORT", 8080))
 
-# ── API Credentials ─────────────────────────────────────────────────────────
-OPENAI_KEY  = os.environ.get('OPENAI_API_KEY___')  or os.environ.get('OPENAI_API_KEY', '')
-GEMINI_KEY  = os.environ.get('GEMINI_API_KEY___')  or os.environ.get('GEMINI_API_KEY', '')
-OPENAI_BASE = (os.environ.get('OPENAI_BASE_URL')  or '').rstrip('/')
-GEMINI_BASE = (os.environ.get('GEMINI_BASE_URL')   or '').rstrip('/')
-CF_TOKEN    = os.environ.get('CF_AIG_TOKEN', '')
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-_proxy_hdrs = {'cf-aig-authorization': f'Bearer {CF_TOKEN}'} if CF_TOKEN else {}
-
-openai_client = None
-
-if OPENAI_KEY:
-    openai_client = OpenAI(
-        api_key=OPENAI_KEY,
-        base_url=OPENAI_BASE or None,
-    )
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=PORT)
 
 log.info(f"OpenAI: {'YES' if len(OPENAI_KEY)>10 else 'NO'} | "
          f"Gemini: {'YES' if len(GEMINI_KEY)>10 else 'NO'} | "
