@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Darija Caption Studio</title>
+<style>
+  :root {
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a;
+    --border:#2e3350; --accent:#6c63ff; --accent2:#ff6b9d;
+    --text:#e8eaf6; --muted:#7b82a8; --success:#4caf8a;
+    --warn:#f5a623; --danger:#e05c5c;
+    --font:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+  header{background:var(--surface);border-bottom:1px solid var(--border);
+    padding:14px 24px;display:flex;align-items:center;gap:12px;}
+  .logo{font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .logo-sub{font-size:12px;color:var(--muted);font-weight:400;-webkit-text-fill-color:var(--muted);}
+
+  .app{display:grid;grid-template-columns:1fr 420px;gap:0;height:calc(100vh - 57px);}
+
+  /* LEFT */
+  .left{display:flex;flex-direction:column;overflow:hidden;}
+
+  .upload-zone{margin:20px;border:2px dashed var(--border);border-radius:16px;
+    padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;
+    background:var(--surface);position:relative;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(108,99,255,0.07);}
+  .upload-zone.hidden{display:none;}
+  .upload-icon{font-size:48px;margin-bottom:12px;}
+  .upload-title{font-size:18px;font-weight:600;margin-bottom:6px;}
+  .upload-sub{color:var(--muted);font-size:13px;}
+  #fileInput{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+
+  .player-wrap{margin:0 20px 12px;display:none;}
+  .player-wrap.show{display:block;}
+  .player-wrap video{width:100%;border-radius:12px;background:#000;max-height:220px;display:block;}
+  .player-wrap audio{width:100%;border-radius:12px;height:54px;display:block;}
+  .file-info{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .file-badge{background:var(--accent);color:#fff;font-size:11px;padding:2px 8px;
+    border-radius:20px;font-weight:600;}
+  .file-name{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;}
+
+  .progress-wrap{margin:0 20px 12px;display:none;}
+  .progress-wrap.show{display:flex;flex-direction:column;gap:6px;}
+  .progress-label{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;}
+  .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    border-radius:3px;transition:width 0.4s;width:0%;}
+
+  .editor-header{padding:0 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .editor-title{font-size:15px;font-weight:600;}
+  .editor-actions{display:flex;gap:8px;}
+
+  .segments{flex:1;overflow-y:auto;padding:0 20px 20px;display:flex;flex-direction:column;gap:8px;}
+  .segment{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:12px 14px;transition:border-color 0.15s;cursor:pointer;}
+  .segment:hover{border-color:var(--accent);}
+  .segment.active{border-color:var(--accent);background:rgba(108,99,255,0.06);}
+  .segment.playing{border-color:var(--accent2);background:rgba(255,107,157,0.06);}
+  .seg-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .seg-num{font-size:11px;color:var(--muted);font-weight:600;min-width:24px;}
+  .seg-time{display:flex;gap:4px;align-items:center;flex:1;}
+  .time-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:3px 6px;font-size:12px;width:90px;font-family:monospace;}
+  .time-sep{color:var(--muted);font-size:11px;}
+  .seg-actions{display:flex;gap:4px;}
+  .btn-icon{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;
+    border-radius:6px;padding:3px 7px;font-size:13px;transition:all 0.15s;}
+  .btn-icon:hover{background:var(--surface2);color:var(--text);}
+  .btn-icon.danger:hover{border-color:var(--danger);color:var(--danger);}
+  .btn-icon:disabled{opacity:0.35;cursor:not-allowed;}
+  .seg-text{width:100%;background:transparent;border:none;color:var(--text);
+    font-size:14px;resize:none;outline:none;font-family:var(--font);line-height:1.5;min-height:44px;}
+  .seg-text[dir="rtl"]{text-align:right;font-size:15px;}
+
+  /* RIGHT */
+  .right{background:var(--surface);border-left:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;}
+  .panel-tabs{display:flex;border-bottom:1px solid var(--border);}
+  .tab{flex:1;padding:14px;font-size:13px;font-weight:500;cursor:pointer;
+    color:var(--muted);transition:all 0.15s;text-align:center;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .panel-content{flex:1;overflow-y:auto;padding:20px;}
+
+  /* TRANSLATE */
+  .lang-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+  .lang-btn{padding:10px 6px;border-radius:10px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--muted);cursor:pointer;font-size:12px;
+    font-weight:600;text-align:center;transition:all 0.15s;}
+  .lang-btn:hover{border-color:var(--accent);color:var(--text);}
+  .lang-btn.active{border-color:var(--accent);background:rgba(108,99,255,0.15);color:var(--accent);}
+  .lang-btn .flag{font-size:20px;display:block;margin-bottom:3px;}
+
+  .translate-btn{width:100%;padding:11px;border-radius:10px;background:var(--accent);
+    color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;transition:opacity 0.15s;}
+  .translate-btn:hover{opacity:0.85;}
+  .translate-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .translation-results{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+  .trans-seg{background:var(--surface2);border-radius:10px;padding:10px 12px;}
+  .trans-seg .orig{font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .trans-seg .translated{font-size:14px;line-height:1.5;}
+  .trans-seg[data-lang="arabic"] .translated{direction:rtl;text-align:right;font-size:15px;}
+
+  /* EXPORT */
+  .export-option{background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+    padding:16px;margin-bottom:12px;cursor:pointer;transition:border-color 0.15s;}
+  .export-option:hover{border-color:var(--accent);}
+  .export-option h4{font-size:14px;margin-bottom:4px;}
+  .export-option p{font-size:12px;color:var(--muted);}
+  .export-option .ext{font-weight:700;color:var(--accent);}
+
+  /* BUTTONS */
+  .btn{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all 0.15s;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{opacity:0.85;}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--accent);}
+  .btn-sm{padding:5px 10px;font-size:12px;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-icon{font-size:48px;margin-bottom:12px;opacity:0.4;}
+
+  .toast{position:fixed;bottom:20px;right:20px;padding:12px 18px;border-radius:10px;
+    font-size:13px;font-weight:500;z-index:1000;transform:translateY(60px);opacity:0;
+    transition:all 0.3s;max-width:320px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{background:var(--success);color:#fff;}
+  .toast.error{background:var(--danger);color:#fff;}
+  .toast.info{background:var(--accent);color:#fff;}
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);
+    border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;}
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  @media(max-width:900px){.app{grid-template-columns:1fr;height:auto;}.right{height:480px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🎙 Darija Caption Studio <span class="logo-sub">by CREAO</span></div>
+  <div id="statusDot" style="margin-left:auto;font-size:12px;color:var(--muted)"></div>
+</header>
+
+<div class="app">
+  <!-- LEFT -->
+  <div class="left">
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.ogg,.flac,.mov,.avi,.mkv"/>
+      <div class="upload-icon">📂</div>
+      <div class="upload-title">Drop your audio or video here</div>
+      <div class="upload-sub">MP3 · MP4 · WAV · M4A · WebM · MOV · MKV · OGG — up to 500 MB</div>
+    </div>
+
+    <div class="player-wrap" id="playerWrap">
+      <div class="file-info">
+        <span class="file-badge" id="mediaTypeBadge">AUDIO</span>
+        <span class="file-name" id="fileName"></span>
+      </div>
+      <video id="videoPlayer" controls style="display:none"></video>
+      <audio id="audioPlayer" controls style="display:none"></audio>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Uploading…</span>
+        <span id="progressPct"></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="editor-header" id="editorHeader" style="display:none">
+      <div class="editor-title">✏️ Caption Editor &nbsp;<span id="segCount" style="color:var(--muted);font-size:13px;font-weight:400"></span></div>
+      <div class="editor-actions">
+        <button class="btn btn-secondary btn-sm" onclick="addSegment()">+ Add Line</button>
+        <button class="btn btn-primary btn-sm" onclick="resetAll()">↩ New File</button>
+      </div>
+    </div>
+
+    <div class="segments" id="segments">
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">🎙</div>
+        <p>Upload a file to start transcribing</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="panel-tabs">
+      <div class="tab active" onclick="switchTab('translate',this)">🌍 Translate</div>
+      <div class="tab" onclick="switchTab('export',this)">📤 Export</div>
+      <div class="tab" onclick="switchTab('help',this)">ℹ️ Help</div>
+    </div>
+
+    <!-- TRANSLATE -->
+    <div class="panel-content" id="tab-translate">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Translate all captions into another language. Darija originals are preserved.</p>
+      <div class="lang-grid">
+        <div class="lang-btn" data-lang="arabic"  onclick="selectLang(this)"><span class="flag">🇸🇦</span>Arabic</div>
+        <div class="lang-btn" data-lang="french"  onclick="selectLang(this)"><span class="flag">🇫🇷</span>French</div>
+        <div class="lang-btn" data-lang="english" onclick="selectLang(this)"><span class="flag">🇬🇧</span>English</div>
+      </div>
+      <button class="translate-btn" id="translateBtn" onclick="runTranslation()" disabled>Translate Captions</button>
+      <div class="translation-results" id="translationResults"></div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="panel-content" id="tab-export" style="display:none">
+      <div class="export-option" onclick="doExport('srt')">
+        <h4><span class="ext">SRT</span> — SubRip Subtitle</h4>
+        <p>Works with VLC, YouTube, Premiere, DaVinci Resolve.</p>
+      </div>
+      <div class="export-option" onclick="doExport('vtt')">
+        <h4><span class="ext">VTT</span> — WebVTT</h4>
+        <p>HTML5 native captions. Works in browsers and web players.</p>
+      </div>
+      <div class="export-option" onclick="doExport('txt')">
+        <h4><span class="ext">TXT</span> — Plain Text</h4>
+        <p>Just the text, no timestamps.</p>
+      </div>
+      <div class="export-option" onclick="doExport('json')">
+        <h4><span class="ext">JSON</span> — Structured Data</h4>
+        <p>Full segment data with timing. Useful for developers.</p>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div class="panel-content" id="tab-help" style="display:none">
+      <h3 style="margin-bottom:12px;font-size:15px">How to use</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--muted)">
+        <div><strong style="color:var(--text)">1. Upload</strong><br>Drag &amp; drop or click the upload area. Any audio or video file works.</div>
+        <div><strong style="color:var(--text)">2. Transcribe</strong><br>Audio is sent to OpenAI Whisper. Moroccan Darija captions are generated with timestamps.</div>
+        <div><strong style="color:var(--text)">3. Edit</strong><br>Click any caption to edit. Adjust start/end times in the time fields.</div>
+        <div><strong style="color:var(--text)">4. Sync</strong><br>The active caption highlights automatically as audio plays.</div>
+        <div><strong style="color:var(--text)">5. Translate</strong><br>Pick Arabic, French, or English and click Translate — powered by Gemini.</div>
+        <div><strong style="color:var(--text)">6. Export</strong><br>Download as SRT, VTT, TXT, or JSON.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let segments = [];
+let selectedLang = null;
+let mediaType = 'audio';
+let currentPlayer = null;
+
+// ── DRAG & DROP ──────────────────────────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+// ── FILE HANDLING ────────────────────────────────────────────────────────────
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isVideo = ['mp4','mov','avi','mkv','webm'].includes(ext);
+  mediaType = isVideo ? 'video' : 'audio';
+
+  document.getElementById('mediaTypeBadge').textContent = isVideo ? 'VIDEO' : 'AUDIO';
+  document.getElementById('fileName').textContent = file.name;
+
+  // Show local preview immediately
+  const url = URL.createObjectURL(file);
+  const vp = document.getElementById('videoPlayer');
+  const ap = document.getElementById('audioPlayer');
+  if (isVideo) { vp.src = url; vp.style.display = 'block'; ap.style.display = 'none'; currentPlayer = vp; }
+  else         { ap.src = url; ap.style.display = 'block'; vp.style.display = 'none'; currentPlayer = ap; }
+
+  // Time-sync listener
+  currentPlayer.addEventListener('timeupdate', onTimeUpdate);
+
+  zone.classList.add('hidden');
+  document.getElementById('playerWrap').classList.add('show');
+
+  uploadAndTranscribe(file);
+}
+
+// ── UPLOAD & TRANSCRIBE ──────────────────────────────────────────────────────
+function uploadAndTranscribe(file) {
+  showProgress('Uploading file…', 5);
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  // Fake progress animation
+  const steps = [
+    [2000,  20, 'Extracting audio…'],
+    [4000,  45, 'Sending to Whisper AI…'],
+    [7000,  65, 'Transcribing Darija…'],
+    [11000, 85, 'Finalizing captions…'],
+  ];
+  steps.forEach(([delay, pct, label]) => {
+    setTimeout(() => {
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPct').textContent = pct + '%';
+      document.getElementById('progressLabel').textContent = label;
+    }, delay);
+  });
+
+  fetch('/api/transcribe', { method: 'POST', body: fd })
+    .then(r => {
+      if (!r.ok) return r.json().then(d => { throw new Error(d.error || r.statusText); });
+      return r.json();
+    })
+    .then(data => {
+      hideProgress();
+      segments = data.segments;
+      renderSegments();
+      document.getElementById('editorHeader').style.display = 'flex';
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('translateBtn').disabled = false;
+      showToast(`✅ Transcribed ${segments.length} caption${segments.length !== 1 ? 's' : ''}`, 'success');
+    })
+    .catch(err => {
+      hideProgress();
+      showToast('❌ ' + err.message, 'error');
+    });
+}
+
+function showProgress(label, pct) {
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+function hideProgress() {
+  document.getElementById('progressFill').style.width = '100%';
+  setTimeout(() => document.getElementById('progressWrap').classList.remove('show'), 700);
+}
+
+// ── RENDER SEGMENTS ──────────────────────────────────────────────────────────
+function renderSegments() {
+  const container = document.getElementById('segments');
+  container.querySelectorAll('.segment').forEach(e => e.remove());
+  document.getElementById('segCount').textContent = `— ${segments.length} lines`;
+  segments.forEach((seg, i) => container.appendChild(buildSegmentEl(seg, i)));
+}
+
+function buildSegmentEl(seg, i) {
+  const div = document.createElement('div');
+  div.className = 'segment';
+  div.dataset.index = i;
+  div.dataset.start = seg.start;
+  div.dataset.end   = seg.end;
+  const isRTL = /[\u0600-\u06FF]/.test(seg.text);
+  div.innerHTML = `
+    <div class="seg-head">
+      <span class="seg-num">#${i+1}</span>
+      <div class="seg-time">
+        <input class="time-input" type="text" value="${secToTime(seg.start)}"
+          onchange="updateTime(${i},'start',this.value)" title="Start time"/>
+        <span class="time-sep">→</span>
+        <input class="time-input" type="text" value="${secToTime(seg.end)}"
+          onchange="updateTime(${i},'end',this.value)" title="End time"/>
+      </div>
+      <div class="seg-actions">
+        <button class="btn-icon" title="Seek & play" onclick="seekTo(${seg.start})">▶</button>
+        <button class="btn-icon" title="Split at cursor" onclick="splitSegment(${i})">✂</button>
+        <button class="btn-icon" title="Merge with next" onclick="mergeSegment(${i})"
+          ${i === segments.length - 1 ? 'disabled' : ''}>⬇</button>
+        <button class="btn-icon danger" title="Delete" onclick="deleteSegment(${i})">🗑</button>
+      </div>
+    </div>
+    <textarea class="seg-text" dir="${isRTL ? 'rtl' : 'ltr'}" rows="2"
+      oninput="updateText(${i},this.value)">${escHtml(seg.text)}</textarea>
+  `;
+  div.addEventListener('click', () => {
+    document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+    div.classList.add('active');
+  });
+  return div;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── TIME-SYNC PLAYER → CAPTIONS ──────────────────────────────────────────────
+function onTimeUpdate() {
+  const t = currentPlayer.currentTime;
+  document.querySelectorAll('.segment').forEach(el => {
+    const start = parseFloat(el.dataset.start);
+    const end   = parseFloat(el.dataset.end);
+    if (t >= start && t < end) {
+      if (!el.classList.contains('playing')) {
+        document.querySelectorAll('.segment.playing').forEach(s => s.classList.remove('playing'));
+        el.classList.add('playing');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } else {
+      el.classList.remove('playing');
+    }
+  });
+}
+
+// ── SEGMENT OPS ──────────────────────────────────────────────────────────────
+function updateText(i, val) {
+  segments[i].text = val;
+  const el = document.querySelector(`.segment[data-index="${i}"] .seg-text`);
+  if (el) el.dir = /[\u0600-\u06FF]/.test(val) ? 'rtl' : 'ltr';
+}
+function updateTime(i, key, val) {
+  const s = timeToSec(val);
+  if (!isNaN(s)) { segments[i][key] = s; document.querySelector(`.segment[data-index="${i}"]`).dataset[key] = s; }
+}
+function deleteSegment(i) { segments.splice(i, 1); renderSegments(); }
+function mergeSegment(i) {
+  if (i >= segments.length - 1) return;
+  segments[i].text = segments[i].text.trim() + ' ' + segments[i+1].text.trim();
+  segments[i].end  = segments[i+1].end;
+  segments.splice(i+1, 1);
+  renderSegments();
+  showToast('Lines merged', 'info');
+}
+function splitSegment(i) {
+  const ta  = document.querySelector(`.segment[data-index="${i}"] .seg-text`);
+  const pos = ta ? ta.selectionStart : Math.floor(segments[i].text.length / 2);
+  const a   = segments[i].text.substring(0, pos).trim();
+  const b   = segments[i].text.substring(pos).trim();
+  if (!a || !b) { showToast('Place cursor in the middle of the text first', 'info'); return; }
+  const mid = (segments[i].start + segments[i].end) / 2;
+  segments[i].text = a; segments[i].end = mid;
+  segments.splice(i+1, 0, { id: Date.now(), start: mid, end: segments[i+1]?.start || mid+3, text: b });
+  renderSegments();
+  showToast('Line split ✂', 'info');
+}
+function addSegment() {
+  const last = segments[segments.length - 1];
+  segments.push({ id: Date.now(), start: last ? last.end : 0, end: (last ? last.end : 0) + 3, text: 'New caption' });
+  renderSegments();
+  setTimeout(() => document.querySelectorAll('.segment').item(segments.length - 1)?.scrollIntoView({ behavior: 'smooth' }), 100);
+}
+function seekTo(t) {
+  if (currentPlayer) { currentPlayer.currentTime = t; currentPlayer.play(); }
+}
+
+// ── TRANSLATION ──────────────────────────────────────────────────────────────
+function selectLang(el) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedLang = el.dataset.lang;
+}
+
+function runTranslation() {
+  if (!selectedLang)    { showToast('Pick a language first', 'info'); return; }
+  if (!segments.length) { showToast('No captions to translate', 'info'); return; }
+  const btn = document.getElementById('translateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Translating…';
+  document.getElementById('translationResults').innerHTML = '';
+
+  fetch('/api/translate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ segments, target_lang: selectedLang })
+  })
+  .then(r => {
+    if (!r.ok) return r.json().then(d => { throw new Error(d.error || r.statusText); });
+    return r.json();
+  })
+  .then(data => {
+    btn.disabled = false; btn.textContent = 'Translate Captions';
+    renderTranslations(data.translations);
+    showToast(`Translated to ${selectedLang} ✅`, 'success');
+  })
+  .catch(err => {
+    btn.disabled = false; btn.textContent = 'Translate Captions';
+    showToast('❌ ' + err.message, 'error');
+  });
+}
+
+function renderTranslations(translations) {
+  const c = document.getElementById('translationResults');
+  c.innerHTML = '';
+  translations.forEach((t, i) => {
+    const seg = segments[i] || {};
+    const d = document.createElement('div');
+    d.className = 'trans-seg'; d.dataset.lang = selectedLang;
+    d.innerHTML = `<div class="orig">${escHtml(seg.text || '')}</div><div class="translated">${escHtml(t)}</div>`;
+    c.appendChild(d);
+  });
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function doExport(fmt) {
+  if (!segments.length) { showToast('No captions to export', 'info'); return; }
+  if (fmt === 'srt') {
+    fetch('/api/export_srt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ segments })
+    }).then(r => r.blob()).then(b => downloadBlob(b, 'captions.srt'));
+    return;
+  }
+  let content = '', mime = 'text/plain', name = 'captions.' + fmt;
+  if (fmt === 'vtt') {
+    content = 'WEBVTT\n\n';
+    segments.forEach((seg, i) => { content += `${i+1}\n${secToVTT(seg.start)} --> ${secToVTT(seg.end)}\n${seg.text.trim()}\n\n`; });
+  } else if (fmt === 'txt') {
+    content = segments.map(s => s.text.trim()).join('\n');
+  } else if (fmt === 'json') {
+    content = JSON.stringify(segments, null, 2); mime = 'application/json';
+  }
+  downloadBlob(new Blob([content], { type: mime }), name);
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  showToast(`Downloaded ${name}`, 'success');
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); el.classList.add('active');
+  ['translate','export','help'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+  });
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  segments = []; selectedLang = null; currentPlayer = null;
+  zone.classList.remove('hidden');
+  document.getElementById('playerWrap').classList.remove('show');
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('editorHeader').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.querySelectorAll('.segment').forEach(e => e.remove());
+  document.getElementById('translationResults').innerHTML = '';
+  document.getElementById('translateBtn').disabled = true;
+  ['videoPlayer','audioPlayer'].forEach(id => {
+    const el = document.getElementById(id); el.src = ''; el.style.display = 'none';
+  });
+  document.getElementById('fileInput').value = '';
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── TIME UTILS ────────────────────────────────────────────────────────────────
+function secToTime(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${pad(h)}:${pad(m)}:${sec.toFixed(2).padStart(5,'0')}`;
+}
+function secToVTT(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${pad(h)}:${pad(m)}:${sec.toFixed(3).padStart(6,'0')}`;
+}
+function timeToSec(t) {
+  const p = t.split(':').map(Number);
+  return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p.length === 2 ? p[0]*60+p[1] : p[0];
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+</script>
+</body>
+</html>

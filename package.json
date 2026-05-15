@@ -1,0 +1,18 @@
+{
+  "name": "darija-caption-studio",
+  "version": "1.0.0",
+  "description": "Hybrid Whisper + AI Moroccan Darija caption generator with translation",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.0.0",
+    "multer": "^1.4.5-lts.1",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0"
+  }
+}
