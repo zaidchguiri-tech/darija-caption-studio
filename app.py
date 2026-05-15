@@ -27,11 +27,13 @@ CF_TOKEN    = os.environ.get('CF_AIG_TOKEN', '')
 
 _proxy_hdrs = {'cf-aig-authorization': f'Bearer {CF_TOKEN}'} if CF_TOKEN else {}
 
-openai_client = OpenAI(
-    api_key=OPENAI_KEY,
-    base_url=OPENAI_BASE or None,
-    http_client=httpx.Client(headers=_proxy_hdrs, timeout=180.0),
-)
+openai_client = None
+
+if OPENAI_KEY:
+    openai_client = OpenAI(
+        api_key=OPENAI_KEY,
+        base_url=OPENAI_BASE or None,
+    )
 
 log.info(f"OpenAI: {'YES' if len(OPENAI_KEY)>10 else 'NO'} | "
          f"Gemini: {'YES' if len(GEMINI_KEY)>10 else 'NO'} | "
