@@ -1,15 +1,15 @@
 {
-  "framework": "flask",
-  "buildCommand": "pip install -r requirements.txt",
-  "outputDirectory": ".",
-  "installCommand": "pip install -r requirements.txt",
-  "devCommand": "python app.py",
-  "env": {
-    "OPENAI_API_KEY___": "required",
-    "GEMINI_API_KEY___": "optional",
-    "OPENAI_BASE_URL": "optional",
-    "GEMINI_BASE_URL": "optional",
-    "CF_AIG_TOKEN": "optional",
-    "PORT": "8080"
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ]
 }
